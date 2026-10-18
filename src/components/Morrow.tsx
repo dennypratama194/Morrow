@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Globe } from './Globe';
 import { CityPicker } from './CityPicker';
 import { Logo } from './Logo';
+import { Clocks, Overlap, useReveal } from './Story';
+import { Cta, Faq, Features } from './Extras';
 import type { City } from '@/lib/cities';
 import { CITIES } from '@/lib/cities';
 import { cell, ranked, rotation, slots, CELLS, STEP, type Person, type Range, type Slot } from '@/lib/plan';
@@ -36,6 +38,7 @@ export function Morrow() {
   const [pick, setPick] = useState<number | null>(null);
   const [hover, setHover] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
+  useReveal();
 
   // the browser's own zone and date, and a shared team from the link, only exist on the client
   useEffect(() => {
@@ -104,29 +107,28 @@ export function Morrow() {
 
   return (
     <div className="site">
-      <header className="nav">
-        <a href="#top" className="logo"><Logo />Morrow</a>
-        <nav>
-          <a href="#planner">Planner</a>
-          <a href="#how">How it works</a>
-          <a href="#why">Why</a>
-        </nav>
-      </header>
-
       <section className="hero" id="top">
         <Globe people={people} />
-        <h1><span>Somebody always takes</span><em>the late call.</em></h1>
+        <header className="nav">
+          <nav className="nav-l"><a href="#planner">Planner</a><a href="#how">How it works</a><a href="#faq">FAQ</a></nav>
+          <a href="#top" className="logo"><Logo />Morrow</a>
+          <span className="nav-r"><a href="#why">Why</a><a className="btn" href="#planner">Plan a meeting</a></span>
+        </header>
+        <h1><span>Nine to five,</span><em>everywhere at once.</em></h1>
         <div className="hero-side">
-          <p>Morrow finds the hours your team actually shares. When there aren&rsquo;t any, it takes turns, so the same person stops paying for every meeting.</p>
-          <CityPicker onPick={add} placeholder="Where's your team? Type a city" />
-          <a className="hero-go" href="#planner">or try it with the example team &darr;</a>
+          <p>Morrow finds the hours a spread-out team actually shares. When there are none, it takes turns, so nobody takes every call at midnight.</p>
+          <a className="btn btn-a" href="#planner">Find our hours</a>
         </div>
         <span className="chip"><b />Sun line drawn for right now</span>
       </section>
 
+      <Overlap people={people} best={top[0]} dur={dur} at={all[0]?.t ?? 0} />
+      <Clocks people={people} />
+
       <section className="plan" id="planner" aria-labelledby="plan-h">
         <div className="plan-top">
-          <h2 id="plan-h">The planner</h2>
+          <p className="k">The planner</p>
+          <h2 id="plan-h">Plan your team&rsquo;s meeting.</h2>
           <p className="mute">
             {example ? 'This is an example team. Add a city and it becomes yours.' : 'Your team lives in the link. Nothing you type leaves your browser.'}
           </p>
@@ -279,7 +281,8 @@ export function Morrow() {
       </section>
 
       <section className="how" id="how" aria-labelledby="how-h">
-        <h2 id="how-h">How fairness works</h2>
+        <p className="k">03 · How fairness works</p>
+        <h2 id="how-h">Fair, not just free.</h2>
         <ol>
           <li><small className="mono">01</small><h3>Score every half hour</h3><p>Each hour a meeting spends outside someone&rsquo;s working day counts against it, more the later or earlier it falls. Hours outside the time they said they&rsquo;d stretch to count three times.</p></li>
           <li><small className="mono">02</small><h3>Say who pays</h3><p>The best single time is often the one where one person takes all of it. Morrow names them instead of calling it a perfect slot.</p></li>
@@ -287,11 +290,16 @@ export function Morrow() {
         </ol>
       </section>
 
+      <Features />
+
       <section className="why" id="why" aria-labelledby="why-h">
-        <h2 id="why-h" className="mono">Why this exists</h2>
+        <h2 id="why-h" className="k">05 · Why this exists</h2>
         <p>I&rsquo;m Denny, a product designer in Indonesia. Most of the teams I work with are hours behind me, so the late call is usually mine. Every time zone tool I tried could find a slot. None of them noticed it was always the same person staying up for it. So I built the one I wanted.</p>
         <a href="https://dennypratama.com" className="btn btn-l">dennypratama.com</a>
       </section>
+
+      <Faq />
+      <Cta onPick={add} />
 
       <footer className="foot">
         <span className="logo"><Logo />Morrow</span>
