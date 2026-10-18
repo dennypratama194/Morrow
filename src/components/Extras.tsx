@@ -1,3 +1,7 @@
+'use client';
+
+import { useState } from 'react';
+import { L } from './Label';
 import { CityPicker } from './CityPicker';
 import type { City } from '@/lib/cities';
 
@@ -33,15 +37,22 @@ const FAQ: [string, string][] = [
 ];
 
 export function Faq() {
+  const [open, setOpen] = useState<number | null>(0);
   return (
     <section className="sec faq" id="faq">
       <p className="k">06 · Questions</p>
       <div className="faq-l">
-        {FAQ.map(([q, a]) => (
-          <details key={q}>
-            <summary>{q}</summary>
-            <p>{a}</p>
-          </details>
+        {FAQ.map(([q, a], i) => (
+          <div key={q} className={`qa${open === i ? ' on' : ''}`}>
+            <h3>
+              <button aria-expanded={open === i} aria-controls={`qa-${i}`} id={`qq-${i}`} onClick={() => setOpen(open === i ? null : i)}>
+                {q}<i aria-hidden="true" />
+              </button>
+            </h3>
+            <div className="qa-b" id={`qa-${i}`} role="region" aria-labelledby={`qq-${i}`}>
+              <div><p>{a}</p></div>
+            </div>
+          </div>
         ))}
       </div>
     </section>
@@ -54,7 +65,7 @@ export function Cta({ onPick }: { onPick: (c: City) => void }) {
       <h2><span>Stop giving the late call</span><em>to the same person.</em></h2>
       <div className="cta-act">
         <CityPicker onPick={onPick} placeholder="Type a city to start" />
-        <a className="btn btn-a" href="#planner">Find our hours</a>
+        <a className="btn btn-a" href="#planner"><L>Find our hours</L></a>
       </div>
       <p className="mute">Free. No account. Nothing leaves your browser.</p>
     </section>

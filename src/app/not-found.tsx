@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
+import { L } from '@/components/Label';
 
 export default function NotFound() {
   return (
@@ -7,7 +8,7 @@ export default function NotFound() {
       <Link href="/" className="logo"><Logo />Morrow</Link>
       <h1>It&rsquo;s a different hour<br /><em>somewhere else.</em></h1>
       <p>This page doesn&rsquo;t exist in any time zone.</p>
-      <Link href="/" className="btn btn-a">Back to the planner</Link>
+      <Link href="/" className="btn btn-a"><L>Back to the planner</L></Link>
     </main>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Globe } from './Globe';
 import { CityPicker } from './CityPicker';
 import { Logo } from './Logo';
+import { L } from './Label';
 import { Clocks, Overlap, useReveal } from './Story';
 import { Cta, Faq, Features } from './Extras';
 import type { City } from '@/lib/cities';
@@ -112,12 +113,12 @@ export function Morrow() {
         <header className="nav">
           <nav className="nav-l"><a href="#planner">Planner</a><a href="#how">How it works</a><a href="#faq">FAQ</a></nav>
           <a href="#top" className="logo"><Logo />Morrow</a>
-          <span className="nav-r"><a href="#why">Why</a><a className="btn" href="#planner">Plan a meeting</a></span>
+          <span className="nav-r"><a href="#why">Why</a><a className="btn" href="#planner"><L>Plan a meeting</L></a></span>
         </header>
         <h1><span>Nine to five,</span><em>everywhere at once.</em></h1>
         <div className="hero-side">
           <p>Morrow finds the hours a spread-out team actually shares. When there are none, it takes turns, so nobody takes every call at midnight.</p>
-          <a className="btn btn-a" href="#planner">Find our hours</a>
+          <a className="btn btn-a" href="#planner"><L>Find our hours</L></a>
         </div>
         <span className="chip"><b />Sun line drawn for right now</span>
       </section>
@@ -125,7 +126,7 @@ export function Morrow() {
       <Overlap people={people} best={top[0]} dur={dur} at={all[0]?.t ?? 0} />
       <Clocks people={people} />
 
-      <section className="plan" id="planner" aria-labelledby="plan-h">
+      <section className="plan sec" id="planner" aria-labelledby="plan-h">
         <div className="plan-top">
           <p className="k">The planner</p>
           <h2 id="plan-h">Plan your team&rsquo;s meeting.</h2>
@@ -157,7 +158,8 @@ export function Morrow() {
           <div className="board">
             <div className="ctrl">
               <label>Week of <input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} /></label>
-              <span className="seg" role="group" aria-label="Meeting length">
+              <span className="seg" role="group" aria-label="Meeting length" style={{ '--i': DURS.indexOf(dur) } as React.CSSProperties}>
+                <i aria-hidden="true" />
                 {DURS.map((d) => <button key={d} aria-pressed={dur === d} onClick={() => setDur(d)}>{d} min</button>)}
               </span>
             </div>
@@ -165,6 +167,21 @@ export function Morrow() {
             {people.length > 0 && (
               <>
                 <div className="strips" style={{ '--n': CELLS } as React.CSSProperties} onPointerLeave={() => setHover(null)}>
+                  {(() => {
+                    const r = all.find((x) => x.start === (hover ?? chosen?.start));
+                    if (!r) return null;
+                    return (
+                      <p className="read" aria-live="polite">
+                        <b>{hhmm(r.start)}</b><span className="mute"> your time</span>
+                        {people.map((p, j) => {
+                          const x = r.seats[j];
+                          const c = cell(p, x.min);
+                          return <span key={j} className={`rd ${c}`}><i />{who(p)} {hhmm(x.min)}{dayTag(x.day)}</span>;
+                        })}
+                        <span className="mute rd-h">{hover === null ? 'Hover the strips to read any time. Click to pick it.' : 'Click to pick this time.'}</span>
+                      </p>
+                    );
+                  })()}
                   <div className="axis" aria-hidden="true">
                     <span className="lab mono">Your time · {utcLabel(viewerOff)}</span>
                     <span className="ticks">{TIMES.filter((m) => m % 180 === 0).map((m) => <i key={m}>{hhmm(m)}</i>)}</span>
@@ -207,7 +224,7 @@ export function Morrow() {
                 </div>
 
                 {chosen && (
-                  <div className="slot">
+                  <div className="slot" key={chosen.start}>
                     <h3>{hhmm(chosen.start)}–{hhmm((chosen.start + dur) % 1440)} your time</h3>
                     <ul>
                       {people.map((p, j) => {
@@ -223,9 +240,9 @@ export function Morrow() {
                     </ul>
                     <p className="pays">{payers.length === 0 ? 'Nobody pays for this one.' : payers.length === 1 ? `${who(payers[0])} pays for this one, every time it repeats.` : `${payers.map(who).join(' and ')} pay for this one.`}</p>
                     <div className="acts">
-                      <a className="btn" href={google({ t: chosen.t, dur, title: 'Team meeting', notes: notes(chosen), tz: viewer })} target="_blank" rel="noreferrer">Add weekly to Google Calendar</a>
-                      <button className="btn btn-l" onClick={() => downloadIcs([chosen])}>Download .ics</button>
-                      <button className="btn btn-l" onClick={copy}>{copied ? 'Link copied' : 'Copy share link'}</button>
+                      <a className="btn" href={google({ t: chosen.t, dur, title: 'Team meeting', notes: notes(chosen), tz: viewer })} target="_blank" rel="noreferrer"><L>Add weekly to Google Calendar</L></a>
+                      <button className="btn btn-l" onClick={() => downloadIcs([chosen])}><L>Download .ics</L></button>
+                      <button className="btn btn-l" onClick={copy}><L>{copied ? 'Link copied' : 'Copy share link'}</L></button>
                     </div>
                   </div>
                 )}
@@ -262,7 +279,7 @@ export function Morrow() {
                         </tbody>
                       </table>
                       <p className="mute2">Same time every week, {who(people[rot.fixed.indexOf(Math.max(...rot.fixed))])} always takes the worst of it. Taking turns, the late or early end moves around.</p>
-                      <button className="btn btn-a" onClick={() => downloadIcs(rot.slots)}>Download the rotation (.ics)</button>
+                      <button className="btn btn-a" onClick={() => downloadIcs(rot.slots)}><L>Download the rotation (.ics)</L></button>
                     </>
                   ) : (
                     <p className="mute">
@@ -280,7 +297,7 @@ export function Morrow() {
         </div>
       </section>
 
-      <section className="how" id="how" aria-labelledby="how-h">
+      <section className="how sec" id="how" aria-labelledby="how-h">
         <p className="k">03 · How fairness works</p>
         <h2 id="how-h">Fair, not just free.</h2>
         <ol>
@@ -292,10 +309,10 @@ export function Morrow() {
 
       <Features />
 
-      <section className="why" id="why" aria-labelledby="why-h">
+      <section className="why sec" id="why" aria-labelledby="why-h">
         <h2 id="why-h" className="k">05 · Why this exists</h2>
         <p>I&rsquo;m Denny, a product designer in Indonesia. Most of the teams I work with are hours behind me, so the late call is usually mine. Every time zone tool I tried could find a slot. None of them noticed it was always the same person staying up for it. So I built the one I wanted.</p>
-        <a href="https://dennypratama.com" className="btn btn-l">dennypratama.com</a>
+        <a href="https://dennypratama.com" className="btn btn-l"><L>dennypratama.com</L></a>
       </section>
 
       <Faq />
