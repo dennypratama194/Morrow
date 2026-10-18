@@ -7,7 +7,7 @@ const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-
 export const metadata: Metadata = {
   title: 'Morrow: share the late call',
   description: 'Find the hours a spread-out team shares. When there are none, Morrow rotates the bad slot so the same person stops taking every late call. Free, no sign-up, nothing leaves your browser.',
-  metadataBase: new URL('https://morrow.vercel.app'),
+  metadataBase: new URL('https://morrow-hazel.vercel.app'),
   openGraph: { title: 'Morrow', description: 'Somebody always takes the late call. Morrow makes it not always the same somebody.' },
 };
 
