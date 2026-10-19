@@ -26,6 +26,8 @@ const TIMES = Array.from({ length: CELLS }, (_, i) => i * STEP);
 const hours = (h: number) => (h === 0 ? '0 h' : `${Number.isInteger(h) ? h : h.toFixed(1)} h`);
 const dayTag = (d: number) => (d === 0 ? '' : d > 0 ? ' +1 day' : ' −1 day');
 const who = (p: Person) => p.name || p.city;
+// whether a half hour falls inside a meeting that starts at `at` and runs `dur` minutes, wrapping past midnight
+const within = (m: number, at: number | null | undefined, dur: number) => at != null && (m - at + 1440) % 1440 < dur;
 // whether a slot outside work runs past the end of someone's day or into its start, whichever edge is nearer
 const edge = (p: Person, min: number) => ((min - p.work[1] + 1440) % 1440 <= (p.work[0] - min + 1440) % 1440 ? 'late' : 'early');
 const cost = (p: Person, x: { min: number; out: number; off: boolean }) => (x.off ? `${who(p)} off hours` : `${who(p)} ${hours(x.out)} ${edge(p, x.min)}`);
@@ -172,11 +174,10 @@ export function Morrow() {
                     if (!r) return null;
                     return (
                       <p className="read" aria-live="polite">
-                        <b>{hhmm(r.start)}</b><span className="mute"> your time</span>
+                        <b>{hhmm(r.start)}–{hhmm((r.start + dur) % 1440)}</b><span className="mute"> your time</span>
                         {people.map((p, j) => {
                           const x = r.seats[j];
-                          const c = cell(p, x.min);
-                          return <span key={j} className={`rd ${c}`}><i />{who(p)} {hhmm(x.min)}{dayTag(x.day)}</span>;
+                          return <span key={j} className={`rd ${x.off ? 'off' : x.out ? 'ok' : 'work'}`}><i />{who(p)} {hhmm(x.min)}–{hhmm((x.min + dur) % 1440)}{dayTag(x.day)}</span>;
                         })}
                         <span className="mute rd-h">{hover === null ? 'Hover the strips to read any time. Click to pick it.' : 'Click to pick this time.'}</span>
                       </p>
@@ -195,7 +196,7 @@ export function Morrow() {
                           return (
                             <button
                               key={s.start}
-                              className={`c ${c}${chosen?.start === s.start ? ' sel' : ''}${hover === s.start ? ' hov' : ''}`}
+                              className={`c ${c}${within(s.start, chosen?.start, dur) ? ' sel' : ''}${within(s.start, hover, dur) ? ' hov' : ''}`}
                               aria-label={`${hhmm(s.start)} your time, ${hhmm(s.seats[j].min)} for ${who(p)}`}
                               onPointerEnter={() => setHover(s.start)}
                               onClick={() => setPick(s.start)}

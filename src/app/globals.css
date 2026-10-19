@@ -194,8 +194,8 @@ h1,h2,h3{font-weight:400}
 .c.ok{background:rgba(21,19,15,.2)}
 .c.work{background:var(--ink)}
 .c.hov{box-shadow:inset 0 0 0 1px var(--ac)}
-.c.sel{box-shadow:inset 0 0 0 2px var(--ac)}
-.c.sel.work{background:var(--ac)}
+.c.sel{background:rgba(255,107,44,.28);box-shadow:inset 0 0 0 1.5px var(--ac)}
+.c.sel.work{background:var(--ac);box-shadow:none}
 .legend{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;padding-left:calc(var(--lab) + 12px);color:var(--mute);font-size:12px}
 .legend i{width:12px;height:12px;border-radius:3px;margin-left:8px;background:rgba(21,19,15,.05);box-shadow:inset 0 0 0 1px var(--line)}
 .legend i:first-child{margin-left:0}
