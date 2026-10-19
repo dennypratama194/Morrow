@@ -72,3 +72,11 @@ test('a rotation becomes staggered weekly events', () => {
   assert.match(s, /DTSTART;TZID=Asia\/Jakarta:20261026T200000/);
   assert.equal(s.match(/RRULE:FREQ=WEEKLY;INTERVAL=2/g)?.length, 2);
 });
+
+import { CITIES } from './cities.ts';
+
+test('the city list covers zones ICU files under old names (India, Vietnam, Argentina, Nepal)', () => {
+  for (const tz of ['Asia/Kolkata', 'Asia/Ho_Chi_Minh', 'America/Argentina/Buenos_Aires', 'Asia/Kathmandu'])
+    assert.ok(CITIES.some((c) => c[1] === tz), tz);
+  assert.deepEqual(decode('#' + encode({ people: [P('Mumbai', 'Asia/Kolkata')], dur: 60 }))?.people[0].tz, 'Asia/Kolkata');
+});

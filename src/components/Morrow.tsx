@@ -5,6 +5,7 @@ import { Globe } from './Globe';
 import { CityPicker } from './CityPicker';
 import { Logo } from './Logo';
 import { L } from './Label';
+import { ALL as PAIRS } from '@/lib/pairs';
 import { Clocks, Overlap, useReveal } from './Story';
 import { Cta, Faq, Features } from './Extras';
 import type { City } from '@/lib/cities';
@@ -319,6 +320,10 @@ export function Morrow() {
       <Faq />
       <Cta onPick={add} />
 
+      <nav className="foot-pairs" aria-label="Popular city pairs">
+        <h2 className="k">Best meeting times for popular pairs</h2>
+        {PAIRS.map((p) => <a key={p.slug} href={`/meeting/${p.slug}`}>{p.a} and {p.b}</a>)}
+      </nav>
       <footer className="foot">
         <span className="logo"><Logo />Morrow</span>
         <span className="mute">Free. No account. Your team lives in the link and nothing you type leaves your browser.</span>

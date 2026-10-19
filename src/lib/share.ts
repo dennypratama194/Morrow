@@ -11,6 +11,15 @@ export function encode({ people, dur }: Team) {
   return `t=${b64(JSON.stringify({ p, d: dur }))}`;
 }
 
+const validZone = (tz: string) => {
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 const minute = (n: unknown) => typeof n === 'number' && Number.isInteger(n) && n >= 0 && n < 1440;
 
 /** Reads a shared hash back, dropping anything malformed instead of trusting it. */
@@ -19,11 +28,10 @@ export function decode(hash: string): Team | null {
   if (!m) return null;
   try {
     const raw = JSON.parse(unb64(m[1]));
-    const zones = new Set(Intl.supportedValuesOf('timeZone'));
     const people: Person[] = [];
     for (const r of Array.isArray(raw.p) ? raw.p.slice(0, 12) : []) {
       const [name, city, tz, la, lo, ws, we, os, oe] = r;
-      if (typeof tz !== 'string' || !(zones.has(tz) || tz === 'UTC') || ![ws, we, os, oe].every(minute)) continue;
+      if (typeof tz !== 'string' || !validZone(tz) || ![ws, we, os, oe].every(minute)) continue;
       people.push({
         name: String(name ?? '').slice(0, 40),
         city: String(city ?? '').slice(0, 40),

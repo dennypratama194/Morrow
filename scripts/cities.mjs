@@ -8,7 +8,11 @@ const countries = Object.fromEntries(
 );
 // tzdata's own spellings, swapped for the ones people use
 Object.assign(countries, { GB: 'United Kingdom', US: 'United States', KR: 'South Korea', RU: 'Russia', VN: 'Vietnam' });
-const known = new Set(Intl.supportedValuesOf('timeZone'));
+// a zone counts if the runtime can format it; Intl.supportedValuesOf lists only canonical ICU names, which leaves out
+// Asia/Kolkata, Asia/Ho_Chi_Minh and others that every browser accepts
+const valid = (tz) => { try { new Intl.DateTimeFormat('en', { timeZone: tz }); return true; } catch { return false; } };
+const known = { has: valid };
+const RENAME = { 'Sao Paulo': 'São Paulo', 'Ho Chi Minh': 'Ho Chi Minh City', 'Bogota': 'Bogotá', 'Mexico City': 'Mexico City' };
 const dms = (s, deg) => {
   const sign = s[0] === '-' ? -1 : 1;
   const d = +s.slice(1, 1 + deg);
@@ -23,7 +27,8 @@ for (const line of readFileSync(`${dir}/zone.tab`, 'utf8').split('\n')) {
   const [cc, coord, tz] = line.split('\t');
   if (!known.has(tz)) continue;
   const [, la, lo] = coord.match(/^([+-]\d+)([+-]\d+)$/);
-  const name = tz.split('/').pop().replace(/_/g, ' ');
+  const raw = tz.split('/').pop().replace(/_/g, ' ');
+  const name = RENAME[raw] ?? raw;
   rows.push([name, tz, dms(la, 2), dms(lo, 3), countries[cc] ?? cc]);
 }
 
@@ -45,7 +50,7 @@ const extra = [
   ['Saint Petersburg', 'Europe/Moscow', 59.9, 30.3, 'RU'], ['Tel Aviv', 'Asia/Jerusalem', 32.1, 34.8, 'IL'],
   ['Abu Dhabi', 'Asia/Dubai', 24.5, 54.4, 'AE'], ['Cape Town', 'Africa/Johannesburg', -33.9, 18.4, 'ZA'],
   ['Mumbai', 'Asia/Kolkata', 19.1, 72.9, 'IN'], ['Delhi', 'Asia/Kolkata', 28.6, 77.2, 'IN'],
-  ['Bangalore', 'Asia/Kolkata', 13.0, 77.6, 'IN'], ['Bengaluru', 'Asia/Kolkata', 13.0, 77.6, 'IN'],
+  ['Bangalore', 'Asia/Kolkata', 13.0, 77.6, 'IN'], ['Saigon', 'Asia/Ho_Chi_Minh', 10.8, 106.7, 'VN'], ['Bengaluru', 'Asia/Kolkata', 13.0, 77.6, 'IN'],
   ['Hyderabad', 'Asia/Kolkata', 17.4, 78.5, 'IN'], ['Chennai', 'Asia/Kolkata', 13.1, 80.3, 'IN'],
   ['Pune', 'Asia/Kolkata', 18.5, 73.9, 'IN'], ['Beijing', 'Asia/Shanghai', 39.9, 116.4, 'CN'],
   ['Shenzhen', 'Asia/Shanghai', 22.5, 114.1, 'CN'], ['Hanoi', 'Asia/Bangkok', 21.0, 105.8, 'VN'],
