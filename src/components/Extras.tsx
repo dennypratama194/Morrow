@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { L } from './Label';
+import { FAQ } from '@/lib/site';
 import { CityPicker } from './CityPicker';
 import type { City } from '@/lib/cities';
 
@@ -28,13 +29,6 @@ export function Features() {
   );
 }
 
-const FAQ: [string, string][] = [
-  ['Is Morrow free?', 'Yes. There is no account and no paid plan.'],
-  ['Where is my team stored?', 'Only in the link. The team is written into the part of the URL after the #, which browsers never send to a server. If you lose the link, the plan is gone.'],
-  ['Why not use my calendar’s “find a time”?', 'It finds a slot where everyone is free. It doesn’t tell you that the slot is 9 pm for the same person every week, and it won’t suggest taking turns.'],
-  ['How does it choose a rotation?', 'It tries every set of two or three of the best times and keeps the one that is kindest to the worst-off person. It only suggests rotating when that cuts their share by at least a quarter, and never pushes anyone outside the hours they said they’d stretch to.'],
-  ['Does it work across a daylight saving change?', 'Times are right for the week you pick. Zones change their clocks on different dates, so check the plan again around a change; the calendar events follow your own zone.'],
-];
 
 export function Faq() {
   const [open, setOpen] = useState<number | null>(0);

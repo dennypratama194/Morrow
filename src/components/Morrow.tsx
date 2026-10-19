@@ -119,7 +119,7 @@ export function Morrow() {
         </header>
         <h1><span>Nine to five,</span><em>everywhere at once.</em></h1>
         <div className="hero-side">
-          <p>Morrow finds the hours a spread-out team actually shares. When there are none, it takes turns, so nobody takes every call at midnight.</p>
+          <p>Morrow is a free time zone meeting planner. It finds the hours a spread-out team actually shares, and when there are none, it takes turns, so nobody takes every call at midnight.</p>
           <a className="btn btn-a" href="#planner"><L>Find our hours</L></a>
         </div>
         <span className="chip"><b />Sun line drawn for right now</span>
