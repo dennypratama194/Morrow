@@ -284,11 +284,11 @@ h1,h2,h3{font-weight:400}
   .sec,.plan,.how{padding-top:80px;padding-bottom:72px}
   .ov-rows{--lab:0px;gap:12px;margin-top:48px}
   .ov-row{grid-template-columns:1fr;gap:6px}
-  .ov-city{flex-direction:row;align-items:baseline;gap:8px;font-size:17px}
+  .ov-city{flex-direction:row;align-items:baseline;gap:8px;font-size:17px;line-height:22px}
   .ov-strip{gap:2px}
   .ov-strip i{height:30px;border-radius:3px}
-  .ov-win{top:-8px;bottom:-8px}
-  .ov-win small{white-space:normal;width:min(60vw,240px)}
+  .ov-win{top:22px;bottom:-6px;border-radius:7px}
+  .ov-win small,.ov-win.r small{left:calc(var(--cw) * var(--at) * -1);right:auto;width:calc(100cqw - var(--pad) * 2);margin-top:16px;white-space:normal;text-align:left}
   .clocks{grid-template-columns:1fr 1fr;gap:24px 16px;margin-top:48px}
   .feat ul{grid-template-columns:1fr;gap:32px;margin-top:48px}
   .cta{padding:100px var(--pad) 96px}
