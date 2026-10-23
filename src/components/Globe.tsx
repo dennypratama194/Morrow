@@ -76,16 +76,19 @@ export function Globe({ people }: { people: Person[] }) {
     let px = 0.5;
     let py = 0.5;
     let pin = false;
+    // only a mouse steers it: a finger scrolling the page also sends pointer moves, from far outside the globe
     const move = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return;
       const r = c.getBoundingClientRect();
-      px = (e.clientX - r.left) / r.width;
-      py = (e.clientY - r.top) / r.height;
+      px = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+      py = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
       pin = true;
     };
     const leave = () => { pin = false; };
     const host = c.parentElement!;
     host.addEventListener('pointermove', move);
     host.addEventListener('pointerleave', leave);
+    host.addEventListener('pointercancel', leave);
 
     let sun = sunAt(Date.now());
     let labels: { n: string; v: V; t: string }[] = [];
@@ -221,6 +224,7 @@ export function Globe({ people }: { people: Person[] }) {
       document.removeEventListener('visibilitychange', sync);
       host.removeEventListener('pointermove', move);
       host.removeEventListener('pointerleave', leave);
+      host.removeEventListener('pointercancel', leave);
     };
   }, []);
 
