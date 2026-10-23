@@ -72,7 +72,9 @@ export function Clocks({ people }: { people: Person[] }) {
 /** Sections animate in the first time they come into view. */
 export function useReveal() {
   useEffect(() => {
-    const io = new IntersectionObserver((es) => es.forEach((e) => e.isIntersecting && (e.target.classList.add('in'), io.unobserve(e.target))), { threshold: 0.3 });
+    // reveal once the top of a section is a fifth of the way up the screen; a share of the section's own height never
+    // arrives for one taller than a few screens, like the planner on a phone
+    const io = new IntersectionObserver((es) => es.forEach((e) => e.isIntersecting && (e.target.classList.add('in'), io.unobserve(e.target))), { rootMargin: '0px 0px -20% 0px' });
     document.querySelectorAll('.sec').forEach((s) => io.observe(s));
     return () => io.disconnect();
   }, []);
