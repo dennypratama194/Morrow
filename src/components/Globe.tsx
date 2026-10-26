@@ -4,6 +4,13 @@ import { useEffect, useRef } from 'react';
 import { LAND } from '@/lib/land';
 import { hhmm, local } from '@/lib/tz';
 import type { Person } from '@/lib/plan';
+import { CITIES, type City } from '@/lib/cities';
+
+// the world's big hubs, dotted on the globe at their own time; tap or click one to add it to the team
+const HUBS = ['Tokyo', 'Seoul', 'Shanghai', 'Singapore', 'Jakarta', 'Mumbai', 'Dubai', 'Istanbul', 'Cairo', 'Nairobi',
+  'Lagos', 'Johannesburg', 'Paris', 'Berlin', 'Toronto', 'Mexico City', 'Los Angeles', 'São Paulo', 'Buenos Aires', 'Sydney']
+  .map((n) => CITIES.find((c) => c[0] === n))
+  .filter((c): c is City => !!c);
 
 type V = [number, number, number];
 const vec = (lat: number, lon: number): V => {
@@ -24,12 +31,14 @@ function sunAt(t: number): V {
 /**
  * A globe of dots rising from the bottom of the hero like a horizon, lit by the real sun line, with the team on it at
  * their real local time and arcs between them. It tilts to keep the southernmost person in view, and only draws while
- * it is on screen and the tab is visible; on touch screens it draws every other frame.
+ * it is on screen and the tab is visible. The big hubs are dotted on it too; tap or click one to add it to the team.
  */
-export function Globe({ people }: { people: Person[] }) {
+export function Globe({ people, onPick }: { people: Person[]; onPick?: (c: City) => void }) {
   const cv = useRef<HTMLCanvasElement>(null);
   const team = useRef(people);
   team.current = people;
+  const pick = useRef(onPick);
+  pick.current = onPick;
 
   useEffect(() => {
     const c = cv.current;
@@ -58,6 +67,8 @@ export function Globe({ people }: { people: Person[] }) {
       if (l || i % 7 === 0) pts.push(x, y, z, l);
     }
 
+    const glow = document.createElement('canvas');
+    const gtx = glow.getContext('2d')!;
     let w = 0;
     let h = 0;
     const size = () => {
@@ -72,20 +83,43 @@ export function Globe({ people }: { people: Person[] }) {
     const ro = new ResizeObserver(() => { size(); if (!running) draw(0); });
     ro.observe(c);
 
+    const host = c.parentElement!;
     // the pointer nudges the spin and tilt; read from events, applied in the draw
     let px = 0.5;
     let py = 0.5;
     let pin = false;
     // only a mouse steers it: a finger scrolling the page also sends pointer moves, from far outside the globe
+    let mx = -1;
+    let my = -1;
     const move = (e: PointerEvent) => {
       if (e.pointerType !== 'mouse') return;
       const r = c.getBoundingClientRect();
-      px = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-      py = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+      mx = e.clientX - r.left;
+      my = e.clientY - r.top;
+      px = Math.max(0, Math.min(1, mx / r.width));
+      py = Math.max(0, Math.min(1, my / r.height));
       pin = true;
     };
-    const leave = () => { pin = false; };
-    const host = c.parentElement!;
+    const leave = () => { pin = false; mx = my = -1; };
+    // where each hub was last drawn, for hit tests; a hub under the pointer lights up and a click adds it
+    let spots: { c: City; x: number; y: number }[] = [];
+    let hot: City | null = null;
+    const near = (x: number, y: number, reach: number) => {
+      let best: City | null = null;
+      let d = reach * reach;
+      for (const p of spots) {
+        const q = (p.x - x) ** 2 + (p.y - y) ** 2;
+        if (q < d) { d = q; best = p.c; }
+      }
+      return best;
+    };
+    const click = (e: MouseEvent) => {
+      if (!pick.current || (e.target as Element).closest('a,button')) return;
+      const r = c.getBoundingClientRect();
+      const hit = near(e.clientX - r.left, e.clientY - r.top, 22);
+      if (hit) pick.current(hit);
+    };
+    host.addEventListener('click', click);
     host.addEventListener('pointermove', move);
     host.addEventListener('pointerleave', leave);
     host.addEventListener('pointercancel', leave);
@@ -104,15 +138,21 @@ export function Globe({ people }: { people: Person[] }) {
     const lons = team.current.map((p) => (p.lo * Math.PI) / 180);
     const mean = lons.length ? (Math.atan2(lons.reduce((a, l) => a + Math.sin(l), 0), lons.reduce((a, l) => a + Math.cos(l), 0)) * 180) / Math.PI : 0;
     let spin = mean - 90 - 25;
-    let tilt = 0.42;
+    // start at the tilt the team wants, so the first second isn't spent swinging into place
+    const aim = () => Math.max(-0.45, Math.min(0.42, ((Math.min(40, ...team.current.map((p) => p.la)) - 12) * Math.PI) / 180));
+    let tilt = aim();
+    // dots are drawn in batches that share a colour: a few dozen fills a frame instead of thousands
+    const ZB = 12;
+    const KINDS = 4;
+    const buf = Array.from({ length: KINDS * ZB }, () => new Float32Array(pts.length / 2));
+    const cnt = new Int32Array(KINDS * ZB);
     const draw = (dt: number) => {
       if (w < 2 || h < 2) return;
       const k = `${team.current.map((p) => p.tz + p.la + p.name).join()}`;
       if (k !== key) { key = k; refresh(); }
       // the frame is laid out for 1440 wide; a phone gets a globe as wide as the screen, not a sliver
       const s = Math.max(w / 1440, Math.min(1, h / 900) * 0.62);
-      const minLat = Math.min(40, ...team.current.map((p) => p.la));
-      const tiltTo = Math.max(-0.45, Math.min(0.42, ((minLat - 12) * Math.PI) / 180)) + (pin ? (py - 0.5) * 0.2 : 0);
+      const tiltTo = aim() + (pin ? (py - 0.5) * 0.2 : 0);
       spin += dt * (pin ? 4 + (px - 0.5) * 40 : 5);
       tilt += (tiltTo - tilt) * Math.min(1, dt * 3 || 1);
       const cx = w / 2;
@@ -130,21 +170,44 @@ export function Globe({ people }: { people: Person[] }) {
       };
       ctx.clearRect(0, 0, w, h);
       const [sx, sy, sz] = proj(...sun);
-      const halo = ctx.createRadialGradient(sx, sy, 0, cx, cy, R * 1.25);
+      // the glow is soft, so it is painted at an eighth of the size and scaled up: a full-size gradient every frame
+      // costs more than all the dots
+      const q = 8;
+      if (glow.width !== Math.ceil(w / q) || glow.height !== Math.ceil(h / q)) { glow.width = Math.ceil(w / q); glow.height = Math.ceil(h / q); }
+      const halo = gtx.createRadialGradient(sx / q, sy / q, 0, cx / q, cy / q, (R * 1.25) / q);
       halo.addColorStop(0, `rgba(255,107,44,${0.1 + Math.max(0, sz) * 0.12})`);
       halo.addColorStop(1, 'rgba(255,107,44,0)');
-      ctx.fillStyle = halo;
-      ctx.fillRect(0, 0, w, h);
+      gtx.clearRect(0, 0, glow.width, glow.height);
+      gtx.fillStyle = halo;
+      gtx.fillRect(0, 0, glow.width, glow.height);
+      ctx.drawImage(glow, 0, 0, glow.width * q, glow.height * q);
+      cnt.fill(0);
       for (let i = 0; i < pts.length; i += 4) {
         const [x, y, z] = proj(pts[i], pts[i + 1], pts[i + 2]);
         if (z < -0.05 || y > h + 4) continue;
         const lit = pts[i] * sun[0] + pts[i + 1] * sun[1] + pts[i + 2] * sun[2];
+        // 0 sea, 1 the sun line, 2 lit land, 3 land at night
+        const kind = !pts[i + 3] ? 0 : Math.abs(lit) < 0.06 ? 1 : lit > 0 ? 2 : 3;
+        const b = kind * ZB + Math.min(ZB - 1, Math.max(0, Math.floor(((z + 0.05) / 1.05) * ZB)));
+        const o = cnt[b]++ * 2;
+        buf[b][o] = x;
+        buf[b][o + 1] = y;
+      }
+      for (let b = 0; b < KINDS * ZB; b++) {
+        const n = cnt[b];
+        if (!n) continue;
+        const kind = Math.floor(b / ZB);
+        const z = ((b % ZB) + 0.5) / ZB * 1.05 - 0.05;
         const depth = 0.3 + z * 0.7;
-        let r = 1.4 * s * (0.6 + z * 0.6);
-        if (!pts[i + 3]) ctx.fillStyle = `rgba(21,19,15,${0.12 * depth})`;
-        else if (Math.abs(lit) < 0.06) { ctx.fillStyle = `rgba(255,107,44,${depth})`; r *= 1.6; }
-        else { ctx.fillStyle = `rgba(21,19,15,${Math.min(1, depth * 1.3) * (lit > 0 ? 0.95 : 0.4)})`; r *= 1.6; }
-        ctx.fillRect(x - r, y - r, r * 2, r * 2);
+        const r = 1.4 * s * (0.6 + z * 0.6) * (kind === 0 ? 1 : 1.6);
+        ctx.fillStyle =
+          kind === 0 ? `rgba(21,19,15,${0.12 * depth})`
+          : kind === 1 ? `rgba(255,107,44,${depth})`
+          : `rgba(21,19,15,${Math.min(1, depth * 1.3) * (kind === 2 ? 0.95 : 0.4)})`;
+        ctx.beginPath();
+        const a = buf[b];
+        for (let j = 0; j < n * 2; j += 2) ctx.rect(a[j] - r, a[j + 1] - r, r * 2, r * 2);
+        ctx.fill();
       }
       // every pair on the team linked, lifted off the surface, drawing on and off in turn
       const tt = performance.now() / 1000;
@@ -173,6 +236,45 @@ export function Globe({ people }: { people: Person[] }) {
           ctx.stroke();
         }
       const fs = Math.max(11, 13 * s);
+      // hubs: a small ring each, named only on the near side and only where a name fits
+      const taken: number[] = [];
+      const fits = (x: number, y: number, tw: number) => {
+        for (let i = 0; i < taken.length; i += 4)
+          if (x < taken[i + 2] && x + tw > taken[i] && y - fs < taken[i + 3] && y > taken[i + 1]) return false;
+        return true;
+      };
+      for (const l of labels) {
+        const [x, y, z] = proj(...l.v);
+        if (z >= 0.05) taken.push(x - 12, y - 8 - fs, x + 220 * Math.max(0.6, s), y + 4);
+      }
+      // hit test against where the hubs were last frame, a sixtieth of a second ago
+      hot = mx < 0 ? null : near(mx, my, 22);
+      spots = [];
+      const hs = Math.max(10, 11 * s);
+      ctx.font = `400 ${hs}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+      const now = Date.now();
+      for (const hub of HUBS) {
+        if (team.current.some((p) => p.tz === hub[1] && Math.abs(p.la - hub[2]) < 1)) continue;
+        const [x, y, z] = proj(...vec(hub[2], hub[3]));
+        if (z < 0.12 || y > h - hs || x < 0 || x > w) continue;
+        spots.push({ c: hub, x, y });
+        const on = hot === hub;
+        const a = Math.min(1, (z - 0.12) * 2.5);
+        ctx.strokeStyle = on ? '#FF6B2C' : `rgba(21,19,15,${0.55 * a})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(x, y, on ? 5 : Math.max(2.5, 3 * s), 0, Math.PI * 2);
+        ctx.stroke();
+        if (!on && z < 0.45) continue;
+        const text = on ? `+ ${hub[0]} ${hhmm(local(hub[1], now).min)}` : hub[0];
+        const tw = ctx.measureText(text).width;
+        const tx = x + 8 + tw > w - 8 ? x - 8 - tw : x + 8;
+        if (!on && !fits(tx, y + 4, tw)) continue;
+        taken.push(tx, y + 4 - hs, tx + tw, y + 4);
+        ctx.fillStyle = on ? '#C2410C' : `rgba(21,19,15,${0.5 * a})`;
+        ctx.fillText(text, tx, y + 4);
+      }
+      c.style.cursor = hot && pick.current ? 'pointer' : '';
       ctx.font = `500 ${fs}px ui-monospace, SFMono-Regular, Menlo, monospace`;
       for (const l of labels) {
         const [x, y, z] = proj(...l.v);
@@ -191,13 +293,11 @@ export function Globe({ people }: { people: Person[] }) {
 
     let raf = 0;
     let last = performance.now();
-    let n = 0;
     let running = false;
     let seen = false;
     let lastRefresh = 0;
     const tick = (now: number) => {
       raf = requestAnimationFrame(tick);
-      if (coarse && ++n % 2) return;
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       if (now - lastRefresh > 15000) { lastRefresh = now; refresh(); }
@@ -213,6 +313,8 @@ export function Globe({ people }: { people: Person[] }) {
     io.observe(c);
     document.addEventListener('visibilitychange', sync);
     draw(0);
+    // fade and rise in once there is something drawn, so the first frame reads as an entrance, not a load
+    requestAnimationFrame(() => c.classList.add('on'));
     // reduced motion still gets a globe that follows edits, just not one that turns
     const still = reduce ? window.setInterval(() => draw(0), 1000) : 0;
 
@@ -225,6 +327,7 @@ export function Globe({ people }: { people: Person[] }) {
       host.removeEventListener('pointermove', move);
       host.removeEventListener('pointerleave', leave);
       host.removeEventListener('pointercancel', leave);
+      host.removeEventListener('click', click);
     };
   }, []);
 

@@ -112,7 +112,7 @@ export function Morrow() {
   return (
     <div className="site">
       <section className="hero" id="top">
-        <Globe people={people} />
+        <Globe people={people} onPick={add} />
         <header className="nav">
           <nav className="nav-l"><a href="#planner">Planner</a><a href="#how">How it works</a><a href="#faq">FAQ</a></nav>
           <a href="#top" className="logo"><Logo />Morrow</a>
