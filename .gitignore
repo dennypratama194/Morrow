@@ -4,3 +4,21 @@ out
 next-env.d.ts
 *.tsbuildinfo
 .vercel
+
+# Local credentials and signing material
+.env*
+!.env.example
+.npmrc
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local tooling and test output
+.DS_Store
+Thumbs.db
+*.log
+coverage/
+playwright-report/
+test-results/
+.claude/settings.local.json

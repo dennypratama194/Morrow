@@ -134,7 +134,7 @@ export function Morrow() {
           <p className="k">The planner</p>
           <h2 id="plan-h">Plan your team&rsquo;s meeting.</h2>
           <p className="mute">
-            {example ? 'This is an example team. Add a city and it becomes yours.' : 'Your team lives in the link. Nothing you type leaves your browser.'}
+            {example ? 'This is an example team. Add a city and it becomes yours.' : 'Your team is stored in the link. Anyone with it can read the team details.'}
           </p>
         </div>
 
@@ -326,7 +326,7 @@ export function Morrow() {
       </nav>
       <footer className="foot">
         <span className="logo"><Logo />Morrow</span>
-        <span className="mute">Free. No account. Your team lives in the link and nothing you type leaves your browser.</span>
+        <span className="mute">Free. No account. Team details stay in your browser until you share a link or export them.</span>
         <span className="mute">Built by <a href="https://dennypratama.com">Denny Pratama</a></span>
       </footer>
     </div>
