@@ -8,11 +8,12 @@ const who = (p: Person) => p.name || p.city;
 
 /**
  * 01 · Overlap: each person's day as 24 hours, first stacked as if everyone lived in one zone, then slid to where it
- * really sits in UTC when the section comes into view, with the best slot framed.
+ * really sits against the planner's zone when the section comes into view, with the best slot framed.
  */
-export function Overlap({ people, best, dur, at }: { people: Person[]; best?: Slot; dur: number; at: number }) {
+export function Overlap({ people, best, dur, at, zone, zoneName }: { people: Person[]; best?: Slot; dur: number; at: number; zone: string; zoneName: string }) {
   const rows = people.slice(0, 5);
-  const utc = best ? ((best.t / 60000) % 1440 + 1440) % 1440 : 0;
+  const base = offset(zone, at);
+  const utc = best ? best.start : 0;
   const payers = best ? rows.filter((_, j) => best.seats[j]?.out).map(who) : [];
   return (
     <section className="sec ov" id="overlap">
@@ -20,10 +21,11 @@ export function Overlap({ people, best, dur, at }: { people: Person[]; best?: Sl
       <h2 className="h">Everyone&rsquo;s nine to five,<br />slid into line.</h2>
       <div className="ov-rows" style={{ '--rows': rows.length } as React.CSSProperties}>
         {rows.map((p, i) => {
-          const off = offset(p.tz, at) / 60;
+          const own = offset(p.tz, at);
+          const off = (own - base) / 60;
           return (
             <div className="ov-row" key={i} style={{ '--off': off, '--dl': `${0.3 + i * 0.12}s` } as React.CSSProperties}>
-              <span className="ov-city">{who(p)}<small>{utcLabel(off * 60)}</small></span>
+              <span className="ov-city">{who(p)}<small>{utcLabel(own)}</small></span>
               <span className="ov-strip">
                 {Array.from({ length: 24 }, (_, u) => {
                   const c = cell(p, ((u * 60 + off * 60) % 1440 + 1440) % 1440);
@@ -36,12 +38,12 @@ export function Overlap({ people, best, dur, at }: { people: Person[]; best?: Sl
         {best && (
           <span className={`ov-win${utc > 720 ? ' r' : ''}`} style={{ '--at': utc / 60, '--w': dur / 60 } as React.CSSProperties}>
             <small>
-              {hhmm(utc)}–{hhmm((utc + dur) % 1440)} UTC · {payers.length ? `${payers.join(' and ')} ${payers.length > 1 ? 'stretch' : 'stretches'}` : 'everyone in hours'}
+              {hhmm(utc)}–{hhmm((utc + dur) % 1440)} {zoneName} · {payers.length ? `${payers.join(' and ')} ${payers.length > 1 ? 'stretch' : 'stretches'}` : 'everyone in hours'}
             </small>
           </span>
         )}
       </div>
-      <p className="note">Rows show your team, in UTC. Change the team in the planner and they follow.</p>
+      <p className="note">Rows show your team, in {zoneName}. Change the team in the planner and they follow.</p>
     </section>
   );
 }

@@ -22,6 +22,14 @@ const find = (n: string) => CITIES.find((c) => c[0] === n)!;
 // the team this was built for: someone in Indonesia working with London and New York
 const EXAMPLE: Person[] = ['Jakarta', 'London', 'New York'].map((n) => fromCity(find(n)));
 const DURS = [30, 60, 90];
+// zones people often schedule in even when nobody on the team lives there
+const COMMON: [string, string, string][] = [
+  ['Europe/Berlin', 'en-GB', 'Central Europe'], ['Europe/London', 'en-GB', 'UK'], ['America/New_York', 'en-US', 'US East'],
+  ['America/Los_Angeles', 'en-US', 'US West'], ['UTC', 'en-GB', 'UTC'],
+];
+// a zone's everyday short name on a given day: CET or CEST, EST or EDT
+const abbr = (tz: string, t: number, locale: string) =>
+  new Intl.DateTimeFormat(locale, { timeZone: tz, timeZoneName: 'short' }).formatToParts(t).find((x) => x.type === 'timeZoneName')?.value ?? tz;
 const TIMES = Array.from({ length: CELLS }, (_, i) => i * STEP);
 
 const hours = (h: number) => (h === 0 ? '0 h' : `${Number.isInteger(h) ? h : h.toFixed(1)} h`);
@@ -35,6 +43,8 @@ const cost = (p: Person, x: { min: number; out: number; off: boolean }) => (x.of
 
 export function Morrow() {
   const [viewer, setViewer] = useState('UTC');
+  // the zone the planner reads in: the viewer's own unless they pick another, such as the one a meeting was set in
+  const [base, setBase] = useState<string | null>(null);
   const [date, setDate] = useState('2026-10-19');
   const [people, setPeople] = useState<Person[]>(EXAMPLE);
   const [dur, setDur] = useState(60);
@@ -78,7 +88,8 @@ export function Morrow() {
     setExample(false);
   };
 
-  const all = useMemo(() => (people.length ? slots(people, viewer, date, dur) : []), [people, viewer, date, dur]);
+  const zone = base ?? viewer;
+  const all = useMemo(() => (people.length ? slots(people, zone, date, dur) : []), [people, zone, date, dur]);
   const order = useMemo(() => ranked(all), [all]);
   const top = useMemo(() => {
     const out: Slot[] = [];
@@ -90,11 +101,25 @@ export function Morrow() {
   }, [order]);
   const rot = useMemo(() => rotation(all), [all]);
   const chosen = all.find((s) => s.start === (pick ?? top[0]?.start)) ?? top[0];
-  const viewerOff = all[0] ? offset(viewer, all[0].t + 12 * 3600000) : 0;
+  const zoneOff = all[0] ? offset(zone, all[0].t + 12 * 3600000) : 0;
+  const noon = all[24]?.t ?? Date.now();
+  const zones = useMemo(() => {
+    const seen = new Set<string>();
+    const out: { tz: string; label: string; short: string }[] = [];
+    const put = (tz: string, label: string, short: string) => { if (!seen.has(tz)) { seen.add(tz); out.push({ tz, label, short }); } };
+    put(viewer, 'Your time', 'your time');
+    for (const p of people) put(p.tz, `${p.city} time`, `${p.city} time`);
+    for (const [tz, loc, area] of COMMON) {
+      const a = abbr(tz, noon, loc);
+      put(tz, tz === 'UTC' ? 'UTC' : `${a} · ${area}`, a);
+    }
+    return out;
+  }, [viewer, people, noon]);
+  const zoneName = zones.find((z) => z.tz === zone)?.short ?? zone;
 
   const notes = (s: Slot) => people.map((p, j) => `${who(p)}: ${hhmm(s.seats[j].min)}${dayTag(s.seats[j].day)}`).join('\n') + '\n\nPlanned with Morrow';
   const downloadIcs = (list: Slot[]) => {
-    const text = ics(list.map((s) => ({ start: s.start, title: 'Team meeting', notes: notes(s) })), { tz: viewer, date, dur });
+    const text = ics(list.map((s) => ({ start: s.start, title: 'Team meeting', notes: notes(s) })), { tz: zone, date, dur });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([text], { type: 'text/calendar' }));
     a.download = list.length > 1 ? 'morrow-rotation.ics' : 'morrow-meeting.ics';
@@ -126,7 +151,7 @@ export function Morrow() {
         <span className="chip"><b />Sun line drawn for right now</span>
       </section>
 
-      <Overlap people={people} best={top[0]} dur={dur} at={all[0]?.t ?? 0} />
+      <Overlap people={people} best={top[0]} dur={dur} at={all[0]?.t ?? 0} zone={zone} zoneName={zoneName} />
       <Clocks people={people} />
 
       <section className="plan sec" id="planner" aria-labelledby="plan-h">
@@ -161,6 +186,11 @@ export function Morrow() {
           <div className="board">
             <div className="ctrl">
               <label>Week of <input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} /></label>
+              <label>Times in
+                <select value={zone} onChange={(e) => { setBase(e.target.value === viewer ? null : e.target.value); setPick(null); }}>
+                  {zones.map((z) => <option key={z.tz} value={z.tz}>{z.label}</option>)}
+                </select>
+              </label>
               <span className="seg" role="group" aria-label="Meeting length" style={{ '--i': DURS.indexOf(dur) } as React.CSSProperties}>
                 <i aria-hidden="true" />
                 {DURS.map((d) => <button key={d} aria-pressed={dur === d} onClick={() => setDur(d)}>{d} min</button>)}
@@ -175,7 +205,7 @@ export function Morrow() {
                     if (!r) return null;
                     return (
                       <p className="read" aria-live="polite">
-                        <b>{hhmm(r.start)}–{hhmm((r.start + dur) % 1440)}</b><span className="mute"> your time</span>
+                        <b>{hhmm(r.start)}–{hhmm((r.start + dur) % 1440)}</b><span className="mute"> {zoneName}</span>
                         {people.map((p, j) => {
                           const x = r.seats[j];
                           return <span key={j} className={`rd ${x.off ? 'off' : x.out ? 'ok' : 'work'}`}><i />{who(p)} {hhmm(x.min)}–{hhmm((x.min + dur) % 1440)}{dayTag(x.day)}</span>;
@@ -185,7 +215,7 @@ export function Morrow() {
                     );
                   })()}
                   <div className="axis" aria-hidden="true">
-                    <span className="lab mono">Your time · {utcLabel(viewerOff)}</span>
+                    <span className="lab mono">{zoneName === 'your time' ? 'Your time' : zoneName} · {utcLabel(zoneOff)}</span>
                     <span className="ticks">{TIMES.filter((m) => m % 180 === 0).map((m) => <i key={m}>{hhmm(m)}</i>)}</span>
                   </div>
                   {people.map((p, j) => (
@@ -198,7 +228,7 @@ export function Morrow() {
                             <button
                               key={s.start}
                               className={`c ${c}${within(s.start, chosen?.start, dur) ? ' sel' : ''}${within(s.start, hover, dur) ? ' hov' : ''}`}
-                              aria-label={`${hhmm(s.start)} your time, ${hhmm(s.seats[j].min)} for ${who(p)}`}
+                              aria-label={`${hhmm(s.start)} ${zoneName}, ${hhmm(s.seats[j].min)} for ${who(p)}`}
                               onPointerEnter={() => setHover(s.start)}
                               onClick={() => setPick(s.start)}
                               tabIndex={j === 0 ? 0 : -1}
@@ -227,7 +257,7 @@ export function Morrow() {
 
                 {chosen && (
                   <div className="slot" key={chosen.start}>
-                    <h3>{hhmm(chosen.start)}–{hhmm((chosen.start + dur) % 1440)} your time</h3>
+                    <h3>{hhmm(chosen.start)}–{hhmm((chosen.start + dur) % 1440)} {zoneName}</h3>
                     <ul>
                       {people.map((p, j) => {
                         const x = chosen.seats[j];
@@ -242,7 +272,7 @@ export function Morrow() {
                     </ul>
                     <p className="pays">{payers.length === 0 ? 'Nobody pays for this one.' : payers.length === 1 ? `${who(payers[0])} pays for this one, every time it repeats.` : `${payers.map(who).join(' and ')} pay for this one.`}</p>
                     <div className="acts">
-                      <a className="btn" href={google({ t: chosen.t, dur, title: 'Team meeting', notes: notes(chosen), tz: viewer })} target="_blank" rel="noreferrer"><L>Add weekly to Google Calendar</L></a>
+                      <a className="btn" href={google({ t: chosen.t, dur, title: 'Team meeting', notes: notes(chosen), tz: zone })} target="_blank" rel="noreferrer"><L>Add weekly to Google Calendar</L></a>
                       <button className="btn btn-l" onClick={() => downloadIcs([chosen])}><L>Download .ics</L></button>
                       <button className="btn btn-l" onClick={copy}><L>{copied ? 'Link copied' : 'Copy share link'}</L></button>
                     </div>
