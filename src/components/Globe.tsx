@@ -43,6 +43,7 @@ export function Globe({ people, onPick }: { people: Person[]; onPick?: (c: City)
   useEffect(() => {
     const c = cv.current;
     const ctx = c?.getContext('2d');
+    const face = c ? getComputedStyle(c).fontFamily : "sans-serif";
     if (!c || !ctx) return;
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const coarse = matchMedia('(pointer: coarse)').matches;
@@ -251,7 +252,7 @@ export function Globe({ people, onPick }: { people: Person[]; onPick?: (c: City)
       hot = mx < 0 ? null : near(mx, my, 22);
       spots = [];
       const hs = Math.max(10, 11 * s);
-      ctx.font = `400 ${hs}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+      ctx.font = `400 ${hs}px ${face}`;
       const now = Date.now();
       for (const hub of HUBS) {
         if (team.current.some((p) => p.tz === hub[1] && Math.abs(p.la - hub[2]) < 1)) continue;
@@ -275,7 +276,7 @@ export function Globe({ people, onPick }: { people: Person[]; onPick?: (c: City)
         ctx.fillText(text, tx, y + 4);
       }
       c.style.cursor = hot && pick.current ? 'pointer' : '';
-      ctx.font = `500 ${fs}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+      ctx.font = `500 ${fs}px ${face}`;
       for (const l of labels) {
         const [x, y, z] = proj(...l.v);
         if (z < 0.05 || y > h - fs) continue;
