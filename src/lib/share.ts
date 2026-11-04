@@ -1,14 +1,15 @@
 import type { Person } from './plan.ts';
 
-export type Team = { people: Person[]; dur: number };
+/** `at`: the picked meeting's start as a UTC minute of the day, so a link opens on the same meeting in any zone. */
+export type Team = { people: Person[]; dur: number; at?: number | null };
 
 const b64 = (s: string) => btoa(String.fromCharCode(...new TextEncoder().encode(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const unb64 = (s: string) => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0)));
 
 /** The whole team in the URL hash, which browsers never send to a server, so a shared link is the only copy. */
-export function encode({ people, dur }: Team) {
+export function encode({ people, dur, at }: Team) {
   const p = people.map((x) => [x.name, x.city, x.tz, x.la, x.lo, ...x.work, ...x.ok]);
-  return `t=${b64(JSON.stringify({ p, d: dur }))}`;
+  return `t=${b64(JSON.stringify(at == null ? { p, d: dur } : { p, d: dur, a: at }))}`;
 }
 
 const validZone = (tz: string) => {
@@ -44,7 +45,7 @@ export function decode(hash: string): Team | null {
     }
     if (!people.length) return null;
     const dur = [30, 60, 90].includes(raw.d) ? raw.d : 60;
-    return { people, dur };
+    return { people, dur, at: minute(raw.a) ? raw.a : null };
   } catch {
     return null;
   }

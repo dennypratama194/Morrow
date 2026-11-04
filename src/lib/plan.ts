@@ -67,9 +67,10 @@ export type Rotation = { slots: Slot[]; load: number[]; fixed: number[]; best: S
  * holding it at the single best slot every time. Pain, not raw hours: an 11-hour gap costs someone an hour outside
  * work whatever the slot, and what turns can share is how late or early that hour falls. A rotation may not push
  * anyone outside the hours they'll stretch to unless the best slot already does. Returns null when the best slot keeps
- * everyone in working hours, or when no rotation cuts the worst-off person's pain by at least a quarter.
+ * everyone in working hours, or when no rotation cuts the worst-off person's pain by at least `need` (a quarter).
+ * Asking with a need of 0 returns the best rotation there is, to say how little it would help.
  */
-export function rotation(all: Slot[]): Rotation | null {
+export function rotation(all: Slot[], need = 0.25): Rotation | null {
   const order = ranked(all);
   const best = order[0];
   if (!best || best.out === 0) return null;
@@ -101,7 +102,7 @@ export function rotation(all: Slot[]): Rotation | null {
       for (let c = b + 1; c < pool.length; c++) consider([pool[a], pool[b], pool[c]]);
     }
   // only worth asking a team to rotate when it takes at least a quarter off the worst-off person's pain
-  if (pick.length < 2 || worst(pl) > worst(fixed) * 0.75) return null;
+  if (pick.length < 2 || worst(pl) > worst(fixed) * (1 - need)) return null;
   return { slots: [...pick].sort((x, y) => x.start - y.start), load: pl, fixed, best };
 }
 

@@ -61,7 +61,9 @@ import { ics } from './ics.ts';
 
 test('a shared link round-trips and rejects junk', () => {
   const team = { people: [P('Jakarta', 'Asia/Jakarta'), P('São Paulo', 'America/Sao_Paulo')], dur: 30 };
-  assert.deepEqual(decode('#' + encode(team)), team);
+  assert.deepEqual(decode('#' + encode(team)), { ...team, at: null });
+  assert.equal(decode('#' + encode({ ...team, at: 450 }))?.at, 450);
+  assert.equal(decode('#' + encode({ ...team, at: 9999 }))?.at, null);
   assert.equal(decode('#t=bm9wZQ'), null);
   assert.equal(decode('#t=' + btoa(JSON.stringify({ p: [['x', 'x', 'Mars/Base', 0, 0, 1, 2, 3, 4]] }))), null);
 });
@@ -79,4 +81,13 @@ test('the city list covers zones ICU files under old names (India, Vietnam, Arge
   for (const tz of ['Asia/Kolkata', 'Asia/Ho_Chi_Minh', 'America/Argentina/Buenos_Aires', 'Asia/Kathmandu'])
     assert.ok(CITIES.some((c) => c[1] === tz), tz);
   assert.deepEqual(decode('#' + encode({ people: [P('Mumbai', 'Asia/Kolkata')], dur: 60 }))?.people[0].tz, 'Asia/Kolkata');
+});
+
+test('asking for any rotation still finds one when the quarter rule would not', () => {
+  const team = [P('Jakarta', 'Asia/Jakarta'), P('New York', 'America/New_York')];
+  const all = slots(team, 'Asia/Jakarta', '2026-11-04', 60);
+  const loose = rotation(all, 0);
+  const strict = rotation(all);
+  assert.ok(loose);
+  if (strict) assert.deepEqual(strict.slots.map((s) => s.start), loose!.slots.map((s) => s.start));
 });
