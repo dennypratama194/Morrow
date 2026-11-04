@@ -161,15 +161,12 @@ h1,h2,h3{font-weight:400}
 @keyframes pop{from{opacity:0;transform:translateY(12px) scale(.98)}}
 .x:hover{background:var(--bg);color:var(--ink)}
 .hrs{display:grid;gap:6px;margin-top:12px;font-size:14px}
-.hrs label{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.hrs select{appearance:none;padding:4px 8px;border-radius:8px;border:0;background:var(--bg);font-variant-numeric:tabular-nums;font-size:13px;cursor:pointer;transition:background .2s,box-shadow .2s}
-.hrs select:hover{box-shadow:inset 0 0 0 1px rgba(21,19,15,.25)}
+.hrs .fld{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 
 .board{display:grid;grid-template-columns:minmax(0,1fr);gap:40px;min-width:0}
 .ctrl{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;font-size:14px}
-.ctrl label{display:flex;align-items:center;gap:10px}
-.ctrl select{appearance:none;padding:8px 28px 8px 10px;border-radius:10px;border:0;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2315130F' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 10px center;box-shadow:inset 0 0 0 1px var(--line);font-variant-numeric:tabular-nums;font-size:13px;cursor:pointer}
-.ctrl input{padding:8px 10px;border-radius:10px;border:0;background:#fff;box-shadow:inset 0 0 0 1px var(--line);font-variant-numeric:tabular-nums;font-size:13px}
+.ctrl .fld{display:flex;align-items:center;gap:10px}
+
 .seg{position:relative;display:inline-grid;grid-template-columns:repeat(3,1fr);padding:4px;border-radius:999px;background:rgba(255,255,255,.6);box-shadow:inset 0 0 0 1px var(--line)}
 .seg i{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / 3);border-radius:999px;background:var(--ink);transform:translateX(calc(var(--i) * 100%));transition:transform .55s var(--e-out)}
 .seg button{position:relative;padding:8px 16px;border-radius:999px;font-size:14px;transition:color .4s var(--e-out)}
@@ -403,4 +400,44 @@ h1,h2,h3{font-weight:400}
   .dock .btn{min-height:40px;padding:0 12px;font-size:13px}
   .toast{bottom:72px}
   .cmp li{grid-template-columns:88px minmax(0,1fr)}
+}
+
+/* our own dropdown and date picker: same white popover as the city search */
+.pk{position:relative;display:inline-flex}
+.pk-btn{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:10px;background:#fff;box-shadow:inset 0 0 0 1px var(--line);font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap;transition:box-shadow .2s var(--e-out),background .2s}
+.pk-btn:hover,.pk.open .pk-btn{box-shadow:inset 0 0 0 1px rgba(21,19,15,.35)}
+.pk-chev{flex:none;color:var(--mute);transition:transform .3s var(--e-out)}
+.pk.open .pk-dn{transform:rotate(180deg)}
+.pk-s .pk-btn{height:28px;padding:0 8px;gap:6px;border-radius:8px;background:var(--bg);box-shadow:none;font-size:13px}
+.pk-s .pk-btn:hover,.pk-s.open .pk-btn{box-shadow:inset 0 0 0 1px rgba(21,19,15,.25)}
+.pk-pop{animation:drop .3s var(--e-out);position:absolute;z-index:30;left:0;top:calc(100% + 6px);padding:6px;border-radius:14px;background:#fff;box-shadow:0 20px 50px -20px rgba(21,19,15,.35),inset 0 0 0 1px var(--line)}
+.pk-pop.up{top:auto;bottom:calc(100% + 6px);animation-name:rise}
+@keyframes rise{from{opacity:0;transform:translateY(6px) scale(.98)}}
+.pk-list{list-style:none;min-width:100%;max-height:min(320px,60vh);overflow:auto;overscroll-behavior:contain;outline:0}
+.pk-list li{padding:8px 12px 8px 28px;border-radius:9px;font-size:14px;white-space:nowrap;cursor:pointer;position:relative;font-variant-numeric:tabular-nums}
+.pk-s .pk-list li{padding:6px 10px 6px 24px;font-size:13px}
+.pk-list li.act{background:rgba(21,19,15,.06)}
+.pk-list li[aria-selected="true"]{color:var(--ac-ink)}
+.pk-list li[aria-selected="true"]::before{content:"";position:absolute;left:11px;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:var(--ac)}
+.pk-s .pk-list li[aria-selected="true"]::before{left:9px}
+.pk-cal{width:280px;padding:12px}
+.cal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cal-h b{font-weight:400;font-size:15px}
+.cal-h button{width:32px;height:32px;border-radius:9px;font-size:20px;line-height:1;color:var(--mute)}
+.cal-h button:hover{background:rgba(21,19,15,.06);color:var(--ink)}
+.cal-g{display:grid;grid-template-columns:repeat(7,1fr);row-gap:2px;outline:0}
+.cal-w{font-size:11px;color:var(--mute);text-align:center;padding:4px 0}
+.cal-g button{height:34px;font-size:13px;font-variant-numeric:tabular-nums;border-radius:0;transition:background .15s}
+.cal-g button.out{color:rgba(21,19,15,.32)}
+.cal-g button.wk{background:rgba(255,107,44,.1)}
+.cal-g button.wk:nth-child(7n+1){border-radius:9px 0 0 9px}
+.cal-g button.wk:nth-child(7n){border-radius:0 9px 9px 0}
+.cal-g button:hover{background:rgba(21,19,15,.07);border-radius:9px}
+.cal-g button.now{text-decoration:underline;text-decoration-color:var(--ac);text-underline-offset:4px;text-decoration-thickness:1.5px}
+.cal-g button.sel{background:var(--ink);color:var(--bg);border-radius:9px}
+.cal-g:focus-visible button.act{box-shadow:inset 0 0 0 2px var(--ac);border-radius:9px}
+.cal-today{margin-top:10px;width:100%;height:34px;border-radius:9px;font-size:13px;box-shadow:inset 0 0 0 1px var(--line)}
+.cal-today:hover{box-shadow:inset 0 0 0 1px rgba(21,19,15,.35)}
+@media (max-width:720px){
+  .ctrl .pk-pop{max-width:calc(100vw - 32px)}
 }

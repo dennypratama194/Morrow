@@ -5,6 +5,7 @@ import { Globe } from './Globe';
 import { CityPicker } from './CityPicker';
 import { Logo } from './Logo';
 import { L } from './Label';
+import { DateField, Menu } from './Pickers';
 import { ALL as PAIRS } from '@/lib/pairs';
 import { Clocks, Overlap, useReveal } from './Story';
 import { Cta, Faq, Features } from './Extras';
@@ -245,8 +246,8 @@ export function Morrow() {
                   </div>
                   <p className="mute mono">{p.city} · {utcLabel(offset(p.tz, all[0]?.t ?? Date.now()))}</p>
                   <div className="hrs">
-                    <label>Works <Hours v={p.work[0]} on={(v) => set(i, { work: [v, p.work[1]] })} />–<Hours v={p.work[1]} on={(v) => set(i, { work: [p.work[0], v] })} /></label>
-                    <label>Will stretch <Hours v={p.ok[0]} on={(v) => set(i, { ok: [v, p.ok[1]] })} />–<Hours v={p.ok[1]} on={(v) => set(i, { ok: [p.ok[0], v] })} /></label>
+                    <span className="fld">Works <Hours l="Works from" v={p.work[0]} on={(v) => set(i, { work: [v, p.work[1]] })} />–<Hours v={p.work[1]} on={(v) => set(i, { work: [p.work[0], v] })} l="Works until" /></span>
+                    <span className="fld">Will stretch <Hours l="Will stretch from" v={p.ok[0]} on={(v) => set(i, { ok: [v, p.ok[1]] })} />–<Hours v={p.ok[1]} on={(v) => set(i, { ok: [p.ok[0], v] })} l="Will stretch until" /></span>
                   </div>
                 </li>
               ))}
@@ -256,12 +257,8 @@ export function Morrow() {
 
           <div className="board">
             <div className="ctrl">
-              <label>Week of <input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} /></label>
-              <label>Times in
-                <select value={zone} onChange={(e) => { setBase(e.target.value === viewer ? null : e.target.value); }}>
-                  {zones.map((z) => <option key={z.tz} value={z.tz}>{z.label}</option>)}
-                </select>
-              </label>
+              <span className="fld">Week of <DateField label="Week of" value={date} onChange={setDate} today={today(viewer)} /></span>
+              <span className="fld">Times in <Menu label="Times in" value={zone} options={zones.map((z) => ({ value: z.tz, label: z.label }))} onChange={(v) => setBase(v === viewer ? null : v)} /></span>
               <span className="seg" role="group" aria-label="Meeting length" style={{ '--i': DURS.indexOf(dur) } as React.CSSProperties}>
                 <i aria-hidden="true" />
                 {DURS.map((d) => <button key={d} aria-pressed={dur === d} onClick={() => setDur(d)}>{d} min</button>)}
@@ -490,10 +487,7 @@ export function Morrow() {
   );
 }
 
-function Hours({ v, on }: { v: number; on: (v: number) => void }) {
-  return (
-    <select value={v} onChange={(e) => on(Number(e.target.value))}>
-      {TIMES.map((m) => <option key={m} value={m}>{hhmm(m)}</option>)}
-    </select>
-  );
+const HOUR_OPTS = TIMES.map((m) => ({ value: m, label: hhmm(m) }));
+function Hours({ v, on, l }: { v: number; on: (v: number) => void; l: string }) {
+  return <Menu size="s" label={l} value={v} options={HOUR_OPTS} onChange={on} />;
 }
